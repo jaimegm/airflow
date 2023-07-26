@@ -130,6 +130,54 @@ the comments removed and configured in the ``$AIRFLOW_HOME/webserver_config.py``
 For more details, please refer to
 `Security section of FAB documentation <https://flask-appbuilder.readthedocs.io/en/latest/security.html>`_.
 
+Example using organizational Google OAuth
+'''''''''''''''''''''''''''''''''''''''''
+There are a few settings that must be configured to use Google OAuth. Its required by google to
+already have SSL configured for your domain.
+
+* create a Google OAuth 2.0 Client ID here:
+    - ``https://console.cloud.google.com/apis/credentials?project={PROJECT_ID}``
+* when creating credentials use the following format for your ``Authorized redirect URIs``:
+    - https://your-custom-domain.com:8080/oauth-authorized/google
+* store the credentials information in the following Environmental Variables
+    - ``AIRFLOW__GOOGLE__CLIENT_ID``
+    - ``AIRFLOW__GOOGLE__CLIENT_SECRET``
+
+Here is an example of what you might have in your webserver_config.py:
+
+.. code-block:: python
+
+    # Set the following Environmental Variables for your Airflow instance
+    # AIRFLOW__GOOGLE__OAUTH_CALLBACK_ROUTE='/oauth2callback'
+    # AIRFLOW__GOOGLE__DOMAIN=your_custom_domain.com
+    # AIRFLOW__GOOGLE__PROMPT='consent'
+
+    from flask_appbuilder.security.manager import AUTH_OAUTH
+    import os
+
+    AUTH_TYPE = AUTH_OAUTH
+    AUTH_USER_REGISTRATION = True  # allow users who are not already in the FAB DB to register
+    AUTH_USER_REGISTRATION_ROLE = "Viewer"  # Default New user Role when created
+    OAUTH_PROVIDERS = [
+        {
+            "name": "google",
+            "token_key": "access_token",
+            "icon": "fa-google",
+            "whitelist": ["seqana.com"],
+            "remote_app": {
+                "api_base_url": "https://www.googleapis.com/oauth2/v2/",
+                "client_kwargs": {"scope": "email profile"},
+                "access_token_url": "https://accounts.google.com/o/oauth2/token",
+                "authorize_url": "https://accounts.google.com/o/oauth2/auth",
+                "request_token_url": None,
+                "client_id": os.environ.get("AIRFLOW__GOOGLE__CLIENT_ID"),
+                "client_secret": os.environ.get("AIRFLOW__GOOGLE__CLIENT_SECRET"),
+            },
+        }
+    ]
+#https://www.testing-seqana-dataflow.seqana.com:8080/home
+#https://www.testing-seqana-dataflow.seqana.com:8080/
+
 Example using team based Authorization with GitHub OAuth
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 There are a few steps required in order to use team-based authorization with GitHub OAuth.
